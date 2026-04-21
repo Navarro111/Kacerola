@@ -27,9 +27,11 @@ const auth = getAuth(app);
 const DC_BASE =
   "https://firebasedataconnect.googleapis.com/v1beta/projects/kacerola-crud/locations/us-east4/services/kacerola-crud-service/connectors/kacerola-connector";
 
+const API_KEY = "AIzaSyApFU69xB_tbScy1pVtKnZrol84dFSEoQk";
+
 async function dcQuery(operationName, variables = {}) {
-  const token = await auth.currentUser.getIdToken();
-  const res = await fetch(`${DC_BASE}:executeQuery`, {
+  const token = await auth.currentUser.getIdToken(true);
+  const res = await fetch(`${DC_BASE}:executeQuery?key=${API_KEY}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -44,8 +46,8 @@ async function dcQuery(operationName, variables = {}) {
 }
 
 async function dcMutation(operationName, variables = {}) {
-  const token = await auth.currentUser.getIdToken();
-  const res = await fetch(`${DC_BASE}:executeMutation`, {
+  const token = await auth.currentUser.getIdToken(true);
+  const res = await fetch(`${DC_BASE}:executeMutation?key=${API_KEY}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
