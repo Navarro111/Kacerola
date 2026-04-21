@@ -14,12 +14,12 @@ import {
    1) PEGA AQUÍ TU CONFIGURACIÓN DE FIREBASE
    ====================================================== */
 const firebaseConfig = {
-  apiKey: "AIzaSyBkCG_Tcl3PHTpgZbP1-gJ4uHm_3e-xe6Y",
-  authDomain: "servtech-navarro.firebaseapp.com",
-  projectId: "servtech-navarro",
-  storageBucket: "servtech-navarro.firebasestorage.app",
-  messagingSenderId: "667214430439",
-  appId: "1:667214430439:web:3c16fbd9c928958d20e242"
+  apiKey: "AIzaSyApFU69xB_tbScy1pVtKnZrol84dFSEoQk",
+  authDomain: "kacerola-crud.firebaseapp.com",
+  projectId: "kacerola-crud",
+  storageBucket: "kacerola-crud.firebasestorage.app",
+  messagingSenderId: "153091127469",
+  appId: "1:153091127469:web:3fdcfafb19c1cb5ab92e24"
 };
 
 /* ======================================================
