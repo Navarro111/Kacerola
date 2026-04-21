@@ -7,160 +7,181 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="container">
-    <header class="hero">
-      <h1>🍲 KACEROLA - Prototipo CRUD de Gastos</h1>
-      <p>
-        Gestión de gastos para las sucursales de Chiriquí, Panamá y Chitré
-        con Firebase Firestore en tiempo real.
-      </p>
-    </header>
 
-    <nav class="menu">
-      <a href="#formulario-section">Registrar / Editar</a>
-      <a href="#filtros-section">Filtrar</a>
-      <a href="#tabla-section">Visualizar gastos</a>
-    </nav>
+  <!-- ══════════════════════════════════════════
+       PANTALLA DE LOGIN
+  ══════════════════════════════════════════ -->
+  <div id="login-screen" class="login-wrapper">
+    <div class="login-box">
+      <div class="login-logo">🍲</div>
+      <h1 class="login-title">KACEROLA</h1>
+      <p class="login-sub">Sistema de Gestión de Gastos</p>
 
-    <section class="stats">
-      <div class="card-stat">
-        <h3>Total filtrado</h3>
-        <p id="totalGastos">B/. 0.00</p>
-      </div>
-      <div class="card-stat">
-        <h3>Registros visibles</h3>
-        <p id="cantidadRegistros">0</p>
-      </div>
-    </section>
+      <form id="loginForm">
+        <div class="login-field">
+          <label for="loginEmail">Email</label>
+          <input type="email" id="loginEmail" placeholder="tu@email.com" required autocomplete="email" />
+        </div>
+        <div class="login-field">
+          <label for="loginPass">Contraseña</label>
+          <input type="password" id="loginPass" placeholder="••••••••" required autocomplete="current-password" />
+        </div>
+        <p id="loginError" class="login-error"></p>
+        <button type="submit" class="btn primary login-btn">Ingresar</button>
+      </form>
+    </div>
+  </div>
 
-    <section id="mensajes-section">
-      <div id="mensaje" class="mensaje oculto"></div>
-    </section>
+  <!-- ══════════════════════════════════════════
+       PANTALLA PRINCIPAL (app)
+  ══════════════════════════════════════════ -->
+  <div id="app-screen" class="oculto">
+    <div class="container">
 
-    <section id="formulario-section" class="card">
-      <h2>Registrar / Editar gasto</h2>
+      <header class="hero">
+        <h1>🍲 KACEROLA - Prototipo CRUD de Gastos</h1>
+        <p>
+          Gestión de gastos para las sucursales de Chiriquí, Panamá y Chitré
+          con Firebase Data Connect (PostgreSQL).
+        </p>
+        <div class="user-bar">
+          <span id="userEmail" class="user-email"></span>
+          <button id="btnLogout" class="btn secondary btn-sm">Cerrar sesión</button>
+        </div>
+      </header>
 
-      <form id="gastoForm">
+      <nav class="menu">
+        <a href="#formulario-section">Registrar / Editar</a>
+        <a href="#filtros-section">Filtrar</a>
+        <a href="#tabla-section">Visualizar gastos</a>
+      </nav>
+
+      <section class="stats">
+        <div class="card-stat">
+          <h3>Total filtrado</h3>
+          <p id="totalGastos">B/. 0.00</p>
+        </div>
+        <div class="card-stat">
+          <h3>Registros visibles</h3>
+          <p id="cantidadRegistros">0</p>
+        </div>
+      </section>
+
+      <section id="mensajes-section">
+        <div id="mensaje" class="mensaje oculto"></div>
+      </section>
+
+      <section id="formulario-section" class="card">
+        <h2>Registrar / Editar gasto</h2>
+
+        <form id="gastoForm">
+          <div class="grid">
+            <div>
+              <label for="sucursal">Sucursal</label>
+              <select id="sucursal" required>
+                <option value="">Cargando...</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="categoria">Categoría</label>
+              <select id="categoria" required>
+                <option value="">Cargando...</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="periodicidad">Periodicidad</label>
+              <select id="periodicidad" required>
+                <option value="">Cargando...</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="fecha">Fecha</label>
+              <input type="date" id="fecha" required />
+            </div>
+
+            <div>
+              <label for="dia">Día</label>
+              <input type="text" id="dia" placeholder="Se calcula automáticamente" readonly required />
+            </div>
+
+            <div>
+              <label for="cantidad">Cantidad (B/.)</label>
+              <input type="number" id="cantidad" step="0.01" min="0.01" placeholder="0.00" required />
+            </div>
+
+            <div class="full-width">
+              <label for="rubros">Rubros</label>
+              <input type="text" id="rubros" placeholder="Ej. Compra de verduras, combustible, transporte..." required />
+            </div>
+
+            <div class="full-width">
+              <label for="otros">Otros / Observaciones</label>
+              <textarea id="otros" rows="3" placeholder="Detalle adicional del gasto" required></textarea>
+            </div>
+          </div>
+
+          <div class="form-buttons">
+            <button type="submit" id="btnGuardar" class="btn primary">Guardar gasto</button>
+            <button type="button" id="btnCancelar" class="btn secondary oculto">Cancelar edición</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="filtros-section" class="card">
+        <h2>Filtrar gastos</h2>
+
         <div class="grid">
           <div>
-            <label for="sucursal">Sucursal</label>
-            <select id="sucursal" required>
-              <option value="">Seleccione</option>
-              <option value="DB1 - Chiriquí">DB1 - Chiriquí</option>
-              <option value="DB2 - Panamá">DB2 - Panamá</option>
-              <option value="DB3 - Chitré">DB3 - Chitré</option>
+            <label for="filtroCategoria">Filtrar por categoría</label>
+            <select id="filtroCategoria">
+              <option value="Todas">Todas</option>
             </select>
           </div>
 
           <div>
-            <label for="categoria">Categoría</label>
-            <select id="categoria" required>
-              <option value="">Seleccione</option>
-              <option value="Comida">Comida</option>
-              <option value="Viáticos">Viáticos</option>
-              <option value="Otros">Otros</option>
+            <label for="filtroSucursal">Filtrar por sucursal</label>
+            <select id="filtroSucursal">
+              <option value="Todas">Todas</option>
             </select>
-          </div>
-
-          <div>
-            <label for="periodicidad">Periodicidad</label>
-            <select id="periodicidad" required>
-              <option value="">Seleccione</option>
-              <option value="Diario">Diario</option>
-              <option value="Quincenal">Quincenal</option>
-              <option value="Mensual">Mensual</option>
-            </select>
-          </div>
-
-          <div>
-            <label for="fecha">Fecha</label>
-            <input type="date" id="fecha" required />
-          </div>
-
-          <div>
-            <label for="dia">Día</label>
-            <input type="text" id="dia" placeholder="Se calcula automáticamente" readonly required />
-          </div>
-
-          <div>
-            <label for="cantidad">Cantidad (B/.)</label>
-            <input type="number" id="cantidad" step="0.01" min="0.01" placeholder="0.00" required />
-          </div>
-
-          <div class="full-width">
-            <label for="rubros">Rubros</label>
-            <input type="text" id="rubros" placeholder="Ej. Compra de verduras, combustible, transporte..." required />
-          </div>
-
-          <div class="full-width">
-            <label for="otros">Otros / Observaciones</label>
-            <textarea id="otros" rows="3" placeholder="Detalle adicional del gasto" required></textarea>
           </div>
         </div>
 
         <div class="form-buttons">
-          <button type="submit" id="btnGuardar" class="btn primary">Guardar gasto</button>
-          <button type="button" id="btnCancelar" class="btn secondary oculto">Cancelar edición</button>
+          <button id="btnLimpiarFiltros" class="btn secondary">Limpiar filtros</button>
         </div>
-      </form>
-    </section>
+      </section>
 
-    <section id="filtros-section" class="card">
-      <h2>Filtrar gastos</h2>
+      <section id="tabla-section" class="card">
+        <h2>Gastos almacenados</h2>
 
-      <div class="grid">
-        <div>
-          <label for="filtroCategoria">Filtrar por categoría</label>
-          <select id="filtroCategoria">
-            <option value="Todas">Todas</option>
-            <option value="Comida">Comida</option>
-            <option value="Viáticos">Viáticos</option>
-            <option value="Otros">Otros</option>
-          </select>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Sucursal</th>
+                <th>Categoría</th>
+                <th>Periodicidad</th>
+                <th>Fecha</th>
+                <th>Día</th>
+                <th>Cantidad</th>
+                <th>Rubros</th>
+                <th>Otros</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tablaGastos">
+              <tr>
+                <td colspan="9" class="empty">No hay registros todavía.</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
+      </section>
 
-        <div>
-          <label for="filtroSucursal">Filtrar por sucursal</label>
-          <select id="filtroSucursal">
-            <option value="Todas">Todas</option>
-            <option value="DB1 - Chiriquí">DB1 - Chiriquí</option>
-            <option value="DB2 - Panamá">DB2 - Panamá</option>
-            <option value="DB3 - Chitré">DB3 - Chitré</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="form-buttons">
-        <button id="btnLimpiarFiltros" class="btn secondary">Limpiar filtros</button>
-      </div>
-    </section>
-
-    <section id="tabla-section" class="card">
-      <h2>Gastos almacenados</h2>
-
-      <div class="table-responsive">
-        <table>
-          <thead>
-            <tr>
-              <th>Sucursal</th>
-              <th>Categoría</th>
-              <th>Periodicidad</th>
-              <th>Fecha</th>
-              <th>Día</th>
-              <th>Cantidad</th>
-              <th>Rubros</th>
-              <th>Otros</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="tablaGastos">
-            <tr>
-              <td colspan="9" class="empty">No hay registros todavía.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
+    </div>
   </div>
 
   <script type="module" src="app.js"></script>
