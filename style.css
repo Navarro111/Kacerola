@@ -31,6 +31,8 @@ html { scroll-behavior: smooth; }
 
 body {
   font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.65;
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
@@ -89,20 +91,20 @@ body {
 
 .hero h1 {
   font-family: var(--mono);
-  font-size: 1.9rem;
+  font-size: 2.2rem;
   color: var(--primary);
   text-shadow: var(--glow-cyan);
   letter-spacing: 0.04em;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .hero p {
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   color: var(--text-dim);
-  font-weight: 300;
-  letter-spacing: 0.02em;
-  line-height: 1.6;
-  max-width: 680px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  line-height: 1.7;
+  max-width: 720px;
 }
 
 /* ── NAV MENU ──────────────────────────────────────── */
@@ -116,7 +118,7 @@ body {
 .menu a {
   text-decoration: none;
   font-family: var(--mono);
-  font-size: 0.8rem;
+  font-size: 0.95rem;
   color: var(--primary);
   border: 1px solid var(--primary-dim);
   background: transparent;
@@ -168,16 +170,16 @@ body {
 
 .card-stat h3 {
   font-family: var(--mono);
-  font-size: 0.72rem;
+  font-size: 0.85rem;
   color: var(--text-dim);
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   margin-bottom: 10px;
 }
 
 .card-stat p {
   font-family: var(--mono);
-  font-size: 2rem;
+  font-size: 2.4rem;
   color: var(--accent);
   text-shadow: var(--glow-green);
   font-weight: 400;
@@ -185,12 +187,12 @@ body {
 
 /* ── MENSAJE ───────────────────────────────────────── */
 .mensaje {
-  padding: 12px 18px;
+  padding: 14px 20px;
   border-radius: var(--radius);
   margin-bottom: 16px;
   font-family: var(--mono);
-  font-size: 0.85rem;
-  letter-spacing: 0.04em;
+  font-size: 1rem;
+  letter-spacing: 0.03em;
   border-left: 3px solid transparent;
 }
 
@@ -235,12 +237,12 @@ body {
 
 .card h2 {
   font-family: var(--mono);
-  font-size: 0.95rem;
-  letter-spacing: 0.1em;
+  font-size: 1.1rem;
+  letter-spacing: 0.08em;
   color: var(--primary);
   text-transform: uppercase;
-  margin-bottom: 22px;
-  padding-bottom: 12px;
+  margin-bottom: 24px;
+  padding-bottom: 14px;
   border-bottom: 1px solid var(--card-border);
 }
 
@@ -262,22 +264,22 @@ body {
 label {
   display: block;
   font-family: var(--mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.1em;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
   color: var(--text-dim);
   text-transform: uppercase;
-  margin-bottom: 7px;
+  margin-bottom: 8px;
 }
 
 input, select, textarea {
   width: 100%;
-  padding: 11px 14px;
+  padding: 13px 16px;
   background: var(--bg2);
   border: 1px solid var(--muted);
   border-radius: var(--radius);
   color: var(--text);
   font-family: var(--mono);
-  font-size: 0.9rem;
+  font-size: 1rem;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
   appearance: none;
@@ -305,7 +307,7 @@ input[readonly] {
 
 input::placeholder, textarea::placeholder {
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: 0.95rem;
 }
 
 textarea { resize: vertical; min-height: 80px; }
@@ -320,9 +322,9 @@ textarea { resize: vertical; min-height: 80px; }
 
 .btn {
   font-family: var(--mono);
-  font-size: 0.82rem;
-  letter-spacing: 0.08em;
-  padding: 11px 22px;
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  padding: 13px 26px;
   border: 1px solid transparent;
   border-radius: var(--radius);
   cursor: pointer;
@@ -396,7 +398,7 @@ table {
   width: 100%;
   border-collapse: collapse;
   min-width: 960px;
-  font-size: 0.88rem;
+  font-size: 1rem;
 }
 
 thead {
@@ -406,22 +408,22 @@ thead {
 
 th {
   font-family: var(--mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.12em;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--primary);
-  padding: 12px 14px;
+  padding: 14px 16px;
   text-align: left;
   white-space: nowrap;
 }
 
 td {
-  padding: 12px 14px;
+  padding: 14px 16px;
   border-bottom: 1px solid #0d1a26;
   color: var(--text);
   vertical-align: top;
   font-family: var(--mono);
-  font-size: 0.85rem;
+  font-size: 0.97rem;
   transition: background 0.15s;
 }
 
@@ -432,10 +434,10 @@ tbody tr:hover td {
 .empty {
   text-align: center;
   color: var(--text-dim);
-  padding: 36px;
+  padding: 40px;
   font-family: var(--mono);
-  font-size: 0.8rem;
-  letter-spacing: 0.1em;
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
 }
 
 .empty::before { content: '[ '; }
@@ -444,11 +446,11 @@ tbody tr:hover td {
 /* ── BADGE ─────────────────────────────────────────── */
 .badge {
   display: inline-block;
-  padding: 3px 10px;
+  padding: 4px 12px;
   border-radius: 2px;
   font-family: var(--mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
   border: 1px solid var(--primary-dim);
   color: var(--primary);
   background: #00e5ff08;
@@ -465,10 +467,13 @@ tbody tr:hover td {
 /* ── RESPONSIVE ────────────────────────────────────── */
 @media (max-width: 768px) {
   .hero { padding: 22px 18px; }
-  .hero h1 { font-size: 1.3rem; }
+  .hero h1 { font-size: 1.5rem; }
   .card { padding: 20px 16px; }
-  .card-stat p { font-size: 1.5rem; }
+  .card-stat p { font-size: 1.8rem; }
   .container { width: 96%; }
+  label { font-size: 0.8rem; }
+  input, select, textarea { font-size: 0.95rem; }
+  td, th { font-size: 0.88rem; }
 }
 
 /* ── SCAN LINE EFFECT (sutil) ──────────────────────── */
