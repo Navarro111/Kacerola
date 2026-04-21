@@ -1,9 +1,14 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
+  getAuth,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
   getFirestore,
   collection,
   addDoc,
-  onSnapshot,
   updateDoc,
   deleteDoc,
   doc,
@@ -11,7 +16,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* ======================================================
-   1) PEGA AQUÍ TU CONFIGURACIÓN DE FIREBASE
+   1) CONFIGURACIÓN DE FIREBASE
    ====================================================== */
 const firebaseConfig = {
   apiKey: "AIzaSyApFU69xB_tbScy1pVtKnZrol84dFSEoQk",
@@ -22,51 +27,160 @@ const firebaseConfig = {
   appId: "1:153091127469:web:3fdcfafb19c1cb5ab92e24"
 };
 
-/* ======================================================
-   2) INICIALIZAR FIREBASE
-   ====================================================== */
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
 const gastosRef = collection(db, "gastos");
 
 /* ======================================================
-   3) REFERENCIAS DEL DOM
+   2) DATA CONNECT — endpoint base
    ====================================================== */
-const gastoForm = document.getElementById("gastoForm");
-const sucursal = document.getElementById("sucursal");
-const categoria = document.getElementById("categoria");
-const periodicidad = document.getElementById("periodicidad");
-const fecha = document.getElementById("fecha");
-const dia = document.getElementById("dia");
-const cantidad = document.getElementById("cantidad");
-const rubros = document.getElementById("rubros");
-const otros = document.getElementById("otros");
+const DC_BASE =
+  "https://firebasedataconnect.googleapis.com/v1beta/projects/kacerola-crud/locations/us-east4/services/kacerola-crud-service/connectors/kacerola-connector";
 
-const btnGuardar = document.getElementById("btnGuardar");
-const btnCancelar = document.getElementById("btnCancelar");
+const API_KEY = "AIzaSyApFU69xB_tbScy1pVtKnZrol84dFSEoQk";
 
-const filtroCategoria = document.getElementById("filtroCategoria");
+async function dcQuery(operationName, variables = {}) {
+  const token = await auth.currentUser.getIdToken(true);
+  const res = await fetch(`${DC_BASE}:executeQuery?key=${API_KEY}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    },
+    body: JSON.stringify({ operationName, variables })
+  });
+  if (!res.ok) throw new Error(`Query error ${res.status}: ${await res.text()}`);
+  const json = await res.json();
+  if (json.errors) throw new Error(json.errors[0].message);
+  return json.data;
+}
+
+async function dcMutation(operationName, variables = {}) {
+  const token = await auth.currentUser.getIdToken(true);
+  const res = await fetch(`${DC_BASE}:executeMutation?key=${API_KEY}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    },
+    body: JSON.stringify({ operationName, variables })
+  });
+  if (!res.ok) throw new Error(`Mutation error ${res.status}: ${await res.text()}`);
+  const json = await res.json();
+  if (json.errors) throw new Error(json.errors[0].message);
+  return json.data;
+}
+
+/* ======================================================
+   3) FIRESTORE — doble escritura
+   Guarda una copia plana en Firestore con los nombres
+   de sucursal, categoría y periodicidad (no IDs).
+   ====================================================== */
+async function fsCrear(datos) {
+  try {
+    await addDoc(gastosRef, { ...datos, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+  } catch (err) {
+    console.warn("Firestore crear (no crítico):", err.message);
+  }
+}
+
+async function fsActualizar(fsId, datos) {
+  try {
+    if (!fsId) return;
+    await updateDoc(doc(db, "gastos", fsId), { ...datos, updatedAt: serverTimestamp() });
+  } catch (err) {
+    console.warn("Firestore actualizar (no crítico):", err.message);
+  }
+}
+
+async function fsEliminar(fsId) {
+  try {
+    if (!fsId) return;
+    await deleteDoc(doc(db, "gastos", fsId));
+  } catch (err) {
+    console.warn("Firestore eliminar (no crítico):", err.message);
+  }
+}
+
+/* ======================================================
+   4) PANTALLAS
+   ====================================================== */
+const loginScreen = document.getElementById("login-screen");
+const appScreen   = document.getElementById("app-screen");
+
+function mostrarLogin() {
+  loginScreen.classList.remove("oculto");
+  appScreen.classList.add("oculto");
+}
+
+function mostrarApp() {
+  loginScreen.classList.add("oculto");
+  appScreen.classList.remove("oculto");
+}
+
+/* ======================================================
+   5) LOGIN
+   ====================================================== */
+const loginForm    = document.getElementById("loginForm");
+const loginEmail   = document.getElementById("loginEmail");
+const loginPass    = document.getElementById("loginPass");
+const loginError   = document.getElementById("loginError");
+const btnLogout    = document.getElementById("btnLogout");
+const userEmailTag = document.getElementById("userEmail");
+
+loginForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  loginError.textContent = "";
+  try {
+    await signInWithEmailAndPassword(auth, loginEmail.value.trim(), loginPass.value);
+  } catch (err) {
+    loginError.textContent = "Credenciales incorrectas. Intenta de nuevo.";
+  }
+});
+
+btnLogout.addEventListener("click", async () => {
+  await signOut(auth);
+});
+
+/* ======================================================
+   6) REFERENCIAS DEL DOM (app)
+   ====================================================== */
+const gastoForm      = document.getElementById("gastoForm");
+const selectSucursal = document.getElementById("sucursal");
+const selectCategoria= document.getElementById("categoria");
+const selectPeriod   = document.getElementById("periodicidad");
+const fecha          = document.getElementById("fecha");
+const dia            = document.getElementById("dia");
+const cantidad       = document.getElementById("cantidad");
+const rubros         = document.getElementById("rubros");
+const otros          = document.getElementById("otros");
+const btnGuardar     = document.getElementById("btnGuardar");
+const btnCancelar    = document.getElementById("btnCancelar");
+const filtroCategoria= document.getElementById("filtroCategoria");
 const filtroSucursal = document.getElementById("filtroSucursal");
 const btnLimpiarFiltros = document.getElementById("btnLimpiarFiltros");
-
-const tablaGastos = document.getElementById("tablaGastos");
-const mensaje = document.getElementById("mensaje");
-const totalGastos = document.getElementById("totalGastos");
+const tablaGastos    = document.getElementById("tablaGastos");
+const mensaje        = document.getElementById("mensaje");
+const totalGastos    = document.getElementById("totalGastos");
 const cantidadRegistros = document.getElementById("cantidadRegistros");
 
 /* ======================================================
-   4) ESTADO DE LA APP
+   7) ESTADO
    ====================================================== */
-let gastos = [];
-let editandoId = null;
+let gastos        = [];
+let branches      = [];
+let categories    = [];
+let periodicities = [];
+let editandoId    = null;
+let editandoFsId  = null; // ID del documento en Firestore
 
 /* ======================================================
-   5) FUNCIONES AUXILIARES
+   8) FUNCIONES AUXILIARES
    ====================================================== */
 function mostrarMensaje(texto, tipo = "success") {
   mensaje.textContent = texto;
   mensaje.className = `mensaje ${tipo}`;
-
   setTimeout(() => {
     mensaje.className = "mensaje oculto";
     mensaje.textContent = "";
@@ -75,153 +189,125 @@ function mostrarMensaje(texto, tipo = "success") {
 
 function limpiarFormulario() {
   gastoForm.reset();
-  dia.value = "";
-  editandoId = null;
+  dia.value    = "";
+  editandoId   = null;
+  editandoFsId = null;
   btnGuardar.textContent = "Guardar gasto";
   btnCancelar.classList.add("oculto");
 }
 
 function obtenerDiaEnEspanol(fechaTexto) {
   if (!fechaTexto) return "";
-
-  const dias = [
-    "Domingo",
-    "Lunes",
-    "Martes",
-    "Miércoles",
-    "Jueves",
-    "Viernes",
-    "Sábado"
-  ];
-
-  const fechaObj = new Date(`${fechaTexto}T00:00:00`);
-  return dias[fechaObj.getDay()];
-}
-
-function validarCampos() {
-  if (
-    !sucursal.value.trim() ||
-    !categoria.value.trim() ||
-    !periodicidad.value.trim() ||
-    !fecha.value.trim() ||
-    !dia.value.trim() ||
-    !cantidad.value.trim() ||
-    !rubros.value.trim() ||
-    !otros.value.trim()
-  ) {
-    mostrarMensaje("Todos los campos son obligatorios. No pueden quedar vacíos.", "error");
-    return false;
-  }
-
-  const monto = parseFloat(cantidad.value);
-  if (isNaN(monto) || monto <= 0) {
-    mostrarMensaje("La cantidad debe ser un número mayor que 0.", "error");
-    return false;
-  }
-
-  return true;
-}
-
-function obtenerDatosFormulario() {
-  return {
-    sucursal: sucursal.value.trim(),
-    categoria: categoria.value.trim(),
-    periodicidad: periodicidad.value.trim(),
-    fecha: fecha.value,
-    dia: dia.value.trim(),
-    cantidad: parseFloat(cantidad.value),
-    rubros: rubros.value.trim(),
-    otros: otros.value.trim(),
-    updatedAt: serverTimestamp()
-  };
+  const dias = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+  return dias[new Date(`${fechaTexto}T00:00:00`).getDay()];
 }
 
 function escaparHTML(valor) {
   if (valor === null || valor === undefined) return "";
   return String(valor)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+    .replaceAll("&","&amp;").replaceAll("<","&lt;")
+    .replaceAll(">","&gt;").replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
 }
 
 function aplicarFiltros(lista) {
-  let resultado = [...lista];
-
-  if (filtroCategoria.value !== "Todas") {
-    resultado = resultado.filter(item => item.categoria === filtroCategoria.value);
-  }
-
-  if (filtroSucursal.value !== "Todas") {
-    resultado = resultado.filter(item => item.sucursal === filtroSucursal.value);
-  }
-
-  return resultado;
+  let r = [...lista];
+  if (filtroCategoria.value !== "Todas")
+    r = r.filter(i => i.category?.name === filtroCategoria.value);
+  if (filtroSucursal.value !== "Todas")
+    r = r.filter(i => i.branch?.name === filtroSucursal.value);
+  return r;
 }
 
 function actualizarResumen(lista) {
-  const total = lista.reduce((acc, item) => acc + Number(item.cantidad || 0), 0);
+  const total = lista.reduce((a, i) => a + Number(i.cantidad || 0), 0);
   totalGastos.textContent = `B/. ${total.toFixed(2)}`;
   cantidadRegistros.textContent = lista.length;
 }
 
 function renderizarTabla() {
-  const listaFiltrada = aplicarFiltros(gastos);
-  actualizarResumen(listaFiltrada);
+  const lista = aplicarFiltros(gastos);
+  actualizarResumen(lista);
 
-  if (listaFiltrada.length === 0) {
-    tablaGastos.innerHTML = `
-      <tr>
-        <td colspan="9" class="empty">No hay registros para mostrar.</td>
-      </tr>
-    `;
+  if (lista.length === 0) {
+    tablaGastos.innerHTML = `<tr><td colspan="9" class="empty">No hay registros para mostrar.</td></tr>`;
     return;
   }
 
-  tablaGastos.innerHTML = listaFiltrada
-    .map(
-      item => `
-        <tr>
-          <td>${escaparHTML(item.sucursal)}</td>
-          <td><span class="badge">${escaparHTML(item.categoria)}</span></td>
-          <td>${escaparHTML(item.periodicidad)}</td>
-          <td>${escaparHTML(item.fecha)}</td>
-          <td>${escaparHTML(item.dia)}</td>
-          <td>B/. ${Number(item.cantidad).toFixed(2)}</td>
-          <td>${escaparHTML(item.rubros)}</td>
-          <td>${escaparHTML(item.otros)}</td>
-          <td>
-            <div class="actions">
-              <button class="btn warning btn-editar" data-id="${item.id}">Editar</button>
-              <button class="btn danger btn-eliminar" data-id="${item.id}">Eliminar</button>
-            </div>
-          </td>
-        </tr>
-      `
-    )
-    .join("");
-}
-
-function cargarDatosEnFormulario(item) {
-  sucursal.value = item.sucursal;
-  categoria.value = item.categoria;
-  periodicidad.value = item.periodicidad;
-  fecha.value = item.fecha;
-  dia.value = item.dia;
-  cantidad.value = Number(item.cantidad).toFixed(2);
-  rubros.value = item.rubros;
-  otros.value = item.otros;
-
-  editandoId = item.id;
-  btnGuardar.textContent = "Actualizar gasto";
-  btnCancelar.classList.remove("oculto");
-
-  document.getElementById("formulario-section").scrollIntoView({ behavior: "smooth" });
+  tablaGastos.innerHTML = lista.map(item => `
+    <tr>
+      <td>${escaparHTML(item.branch?.name)}</td>
+      <td><span class="badge">${escaparHTML(item.category?.name)}</span></td>
+      <td>${escaparHTML(item.periodicity?.name)}</td>
+      <td>${escaparHTML(item.fecha)}</td>
+      <td>${escaparHTML(item.dia)}</td>
+      <td>B/. ${Number(item.cantidad).toFixed(2)}</td>
+      <td>${escaparHTML(item.rubros)}</td>
+      <td>${escaparHTML(item.otros)}</td>
+      <td>
+        <div class="actions">
+          <button class="btn warning btn-editar"
+            data-id="${item.id}"
+            data-fsid="${item.fsId || ''}">Editar</button>
+          <button class="btn danger btn-eliminar"
+            data-id="${item.id}"
+            data-fsid="${item.fsId || ''}">Eliminar</button>
+        </div>
+      </td>
+    </tr>
+  `).join("");
 }
 
 /* ======================================================
-   6) EVENTOS
+   9) POBLAR SELECTS con datos de la BD
+   ====================================================== */
+async function poblarSelects() {
+  try {
+    const [bData, cData, pData] = await Promise.all([
+      dcQuery("ListAllBranches"),
+      dcQuery("ListAllCategories"),
+      dcQuery("ListAllPeriodicities")
+    ]);
+
+    branches      = bData.branches      || [];
+    categories    = cData.categories    || [];
+    periodicities = pData.periodicities || [];
+
+    selectSucursal.innerHTML = `<option value="">Seleccione</option>` +
+      branches.map(b => `<option value="${b.id}">${escaparHTML(b.name)}</option>`).join("");
+
+    selectCategoria.innerHTML = `<option value="">Seleccione</option>` +
+      categories.map(c => `<option value="${c.id}">${escaparHTML(c.name)}</option>`).join("");
+
+    selectPeriod.innerHTML = `<option value="">Seleccione</option>` +
+      periodicities.map(p => `<option value="${p.id}">${escaparHTML(p.name)}</option>`).join("");
+
+    filtroSucursal.innerHTML = `<option value="Todas">Todas</option>` +
+      branches.map(b => `<option value="${b.name}">${escaparHTML(b.name)}</option>`).join("");
+
+    filtroCategoria.innerHTML = `<option value="Todas">Todas</option>` +
+      categories.map(c => `<option value="${c.name}">${escaparHTML(c.name)}</option>`).join("");
+
+  } catch (err) {
+    mostrarMensaje(`Error al cargar catálogos: ${err.message}`, "error");
+  }
+}
+
+/* ======================================================
+   10) CARGAR GASTOS
+   ====================================================== */
+async function cargarGastos() {
+  try {
+    const data = await dcQuery("ListAllGastos");
+    gastos = data.gastos || [];
+    renderizarTabla();
+  } catch (err) {
+    mostrarMensaje(`Error al cargar gastos: ${err.message}`, "error");
+  }
+}
+
+/* ======================================================
+   11) EVENTOS
    ====================================================== */
 fecha.addEventListener("change", () => {
   dia.value = obtenerDiaEnEspanol(fecha.value);
@@ -230,27 +316,61 @@ fecha.addEventListener("change", () => {
 gastoForm.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  if (!validarCampos()) return;
+  const branchId      = selectSucursal.value;
+  const categoryId    = selectCategoria.value;
+  const periodicityId = selectPeriod.value;
+  const fechaVal      = fecha.value;
+  const diaVal        = dia.value;
+  const cantidadVal   = parseFloat(cantidad.value);
+  const rubrosVal     = rubros.value.trim();
+  const otrosVal      = otros.value.trim();
+
+  if (!branchId || !categoryId || !periodicityId || !fechaVal || !diaVal || isNaN(cantidadVal) || cantidadVal <= 0) {
+    mostrarMensaje("Todos los campos son obligatorios.", "error");
+    return;
+  }
+
+  // Nombres legibles para Firestore
+  const branchName      = branches.find(b => b.id === branchId)?.name           || branchId;
+  const categoryName    = categories.find(c => c.id === categoryId)?.name       || categoryId;
+  const periodicityName = periodicities.find(p => p.id === periodicityId)?.name || periodicityId;
+
+  const datosFirestore = {
+    sucursal:     branchName,
+    categoria:    categoryName,
+    periodicidad: periodicityName,
+    fecha:        fechaVal,
+    dia:          diaVal,
+    cantidad:     cantidadVal,
+    rubros:       rubrosVal,
+    otros:        otrosVal
+  };
 
   try {
-    const datos = obtenerDatosFormulario();
-
     if (editandoId) {
-      const docRef = doc(db, "gastos", editandoId);
-      await updateDoc(docRef, datos);
+      await dcMutation("UpdateGasto", {
+        id: editandoId,
+        fecha: fechaVal, dia: diaVal,
+        cantidad: cantidadVal,
+        rubros: rubrosVal, otros: otrosVal,
+        branchId, categoryId, periodicityId
+      });
+      await fsActualizar(editandoFsId, datosFirestore);
       mostrarMensaje("Gasto actualizado correctamente.", "success");
     } else {
-      await addDoc(gastosRef, {
-        ...datos,
-        createdAt: serverTimestamp()
+      await dcMutation("CreateNewGasto", {
+        fecha: fechaVal, dia: diaVal,
+        cantidad: cantidadVal,
+        rubros: rubrosVal, otros: otrosVal,
+        branchId, categoryId, periodicityId
       });
+      await fsCrear(datosFirestore);
       mostrarMensaje("Gasto guardado correctamente.", "success");
     }
-
     limpiarFormulario();
-  } catch (error) {
-    console.error("Error al guardar/actualizar:", error);
-    mostrarMensaje(`Error al procesar la operación: ${error.message}`, "error");
+    await cargarGastos();
+  } catch (err) {
+    mostrarMensaje(`Error: ${err.message}`, "error");
   }
 });
 
@@ -265,72 +385,61 @@ filtroSucursal.addEventListener("change", renderizarTabla);
 btnLimpiarFiltros.addEventListener("click", (e) => {
   e.preventDefault();
   filtroCategoria.value = "Todas";
-  filtroSucursal.value = "Todas";
+  filtroSucursal.value  = "Todas";
   renderizarTabla();
   mostrarMensaje("Filtros limpiados.", "success");
 });
 
 tablaGastos.addEventListener("click", async (e) => {
-  const botonEditar = e.target.closest(".btn-editar");
-  const botonEliminar = e.target.closest(".btn-eliminar");
+  const btnEditar   = e.target.closest(".btn-editar");
+  const btnEliminar = e.target.closest(".btn-eliminar");
 
-  if (botonEditar) {
-    const id = botonEditar.dataset.id;
-    const gasto = gastos.find(item => item.id === id);
-
+  if (btnEditar) {
+    const gasto = gastos.find(g => g.id === btnEditar.dataset.id);
     if (gasto) {
-      cargarDatosEnFormulario(gasto);
+      selectSucursal.value  = gasto.branch?.id      || "";
+      selectCategoria.value = gasto.category?.id    || "";
+      selectPeriod.value    = gasto.periodicity?.id || "";
+      fecha.value    = gasto.fecha;
+      dia.value      = gasto.dia;
+      cantidad.value = Number(gasto.cantidad).toFixed(2);
+      rubros.value   = gasto.rubros || "";
+      otros.value    = gasto.otros  || "";
+      editandoId     = gasto.id;
+      editandoFsId   = btnEditar.dataset.fsid || null;
+      btnGuardar.textContent = "Actualizar gasto";
+      btnCancelar.classList.remove("oculto");
+      document.getElementById("formulario-section").scrollIntoView({ behavior: "smooth" });
     }
   }
 
-  if (botonEliminar) {
-    const id = botonEliminar.dataset.id;
-    const confirmar = confirm("¿Seguro que deseas eliminar este gasto?");
-
-    if (!confirmar) return;
-
+  if (btnEliminar) {
+    if (!confirm("¿Seguro que deseas eliminar este gasto?")) return;
     try {
-      await deleteDoc(doc(db, "gastos", id));
+      const dcId = btnEliminar.dataset.id;
+      const fsId = btnEliminar.dataset.fsid || null;
+      await dcMutation("DeleteGasto", { id: dcId });
+      await fsEliminar(fsId);
       mostrarMensaje("Gasto eliminado correctamente.", "success");
-
-      if (editandoId === id) {
-        limpiarFormulario();
-      }
-    } catch (error) {
-      console.error("Error al eliminar:", error);
-      mostrarMensaje(`Error al eliminar: ${error.message}`, "error");
+      if (editandoId === dcId) limpiarFormulario();
+      await cargarGastos();
+    } catch (err) {
+      mostrarMensaje(`Error al eliminar: ${err.message}`, "error");
     }
   }
 });
 
 /* ======================================================
-   7) LECTURA EN TIEMPO REAL
+   12) AUTH STATE — controla qué pantalla mostrar
    ====================================================== */
-function escucharGastosEnTiempoReal() {
-  try {
-    onSnapshot(
-      gastosRef,
-      (snapshot) => {
-        gastos = snapshot.docs.map((docu) => ({
-          id: docu.id,
-          ...docu.data()
-        }));
-
-        gastos.sort((a, b) => b.fecha.localeCompare(a.fecha));
-        renderizarTabla();
-      },
-      (error) => {
-        console.error("Error en tiempo real:", error);
-        mostrarMensaje(`Error al leer datos en tiempo real: ${error.message}`, "error");
-      }
-    );
-  } catch (error) {
-    console.error("Error general al escuchar datos:", error);
-    mostrarMensaje(`Error al cargar datos: ${error.message}`, "error");
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    userEmailTag.textContent = user.email;
+    mostrarApp();
+    await poblarSelects();
+    await cargarGastos();
+  } else {
+    mostrarLogin();
+    gastos = [];
   }
-}
-
-/* ======================================================
-   8) INICIO
-   ====================================================== */
-escucharGastosEnTiempoReal();
+});
